@@ -8,10 +8,10 @@ The site will spit out json-encoded responses, along with response header codes
 * 404 - nothing to see here
 
 ### endpoints
-/api/orders - get all orders
-/api/orders/{id} - get single order
-/api/orders/new - create an order (and an user if not authenticated) via post
-/api/status/{id} - modify the status (open, pending, complete, expired, cancelled)
+* /api/orders - get all orders
+* /api/orders/{id} - get single order
+* /api/orders/new - create an order (and an user if not authenticated) via post
+* /api/status/{id} - modify the status (open, pending, complete, expired, cancelled)
 
 more soon.
 -sw
