@@ -31,6 +31,66 @@ class Api extends CI_Controller {
 			print json_encode(array('result'=>'404','type'=>'error','message'=>"You forgot to specify a valid order ID (usually a number)."));
 			die;
 		}
+		$result = $this->shared->update_status($id,$status);
+		if ($result) {
+			$this->output->set_status_header('403');
+			print json_encode(array('result'=>'403','type'=>'error','message'=>"Update failed."));
+		} else {
+			$this->output->set_status_header('200');
+			print json_encode(array('result'=>'200','type'=>'success','message'=>"Order status updated as {$status}!"));
+		}
+	}
+
+	public function claim($id=false)
+	{
+		if ($id===false) {
+			$this->output->set_status_header('404');
+			print json_encode(array('result'=>'404','type'=>'error','message'=>"You forgot to specify a valid order ID (usually a number)."));
+			die;
+		}
+		if (!$this->ion_auth->logged_in()) {
+			$this->output->set_status_header('403');
+			print json_encode(array('result'=>'403','type'=>'error','message'=>"You can't claim orders unless you are logged in."));
+			die;
+		}
+		$result = $this->shared->claim_order($id, false);
+		$this->output->set_status_header('200');
+		print json_encode(array('result'=>'200','type'=>'success','message'=>"Order claimed!"));
+		
+	}
+
+	public function success($id=false)
+	{
+		if ($id===false) {
+			$this->output->set_status_header('404');
+			print json_encode(array('result'=>'404','type'=>'error','message'=>"You forgot to specify a valid order ID (usually a number)."));
+			die;
+		}
+		if (!$this->ion_auth->logged_in()) {
+			$this->output->set_status_header('403');
+			print json_encode(array('result'=>'403','type'=>'error','message'=>"You can't claim orders unless you are logged in."));
+			die;
+		}
+		$result = $this->shared->update_status($id, 'complete');
+		$this->output->set_status_header('200');
+		print json_encode(array('result'=>'200','type'=>'success','message'=>"Order marked as delivered!"));
+	}
+
+	public function unclaim($id=false)
+	{
+		if ($id===false) {
+			$this->output->set_status_header('404');
+			print json_encode(array('result'=>'404','type'=>'error','message'=>"You forgot to specify a valid order ID (usually a number)."));
+			die;
+		}
+		if (!$this->ion_auth->logged_in()) {
+			$this->output->set_status_header('403');
+			print json_encode(array('result'=>'403','type'=>'error','message'=>"You can't unclaim orders unless you are logged in."));
+			die;
+		}
+		$result = $this->shared->update_status($id, 'open');
+		$this->output->set_status_header('200');
+		print json_encode(array('result'=>'200','type'=>'success','message'=>"Order unclaimed, sad day."));
 	}
 
 	public function orders($id=FALSE)
