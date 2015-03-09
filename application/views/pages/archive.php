@@ -107,7 +107,7 @@
 								foreach ($orders as $order) { ?> 
 							<tr>
 								<td><?php $_ouser = $this->ion_auth->user($order['user'])->row(); $_cuser = $this->ion_auth->user($order['claimuser'])->row(); echo $_cuser->first_name.' '.$_cuser->last_name; ?> delivered <?php echo $order['restaurant']; ?> to <?php echo $_ouser->first_name.' '.$_ouser->last_name; ?> <i>(<?php echo $this->shared->twitterdate($order['timeclaimed']); ?>)</i></td>
-								<td><?php if ($this->ion_auth->logged_in() && $user->id == $order['user']) { ?><button type="button" class="btn btn-primary btn-xs tt" onclick="dispute(<?php echo $order['id']; ?>, this);" title="Is this a false claim?">Not a success?</button> <?php } ?></td>
+								<td><?php if ($this->ion_auth->logged_in() && $user->id == $order['user']) { ?><button type="button" class="btn btn-primary btn-xs tt" onclick="dispute(<?php echo $order['id']; ?>, this);" title="Is this a false claim? This doesn't do anything yet...">Not a success?</button> <?php } ?></td>
 							</tr>
 							<?php } ?> 
 						</tbody>

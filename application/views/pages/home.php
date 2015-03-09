@@ -45,6 +45,11 @@
 				<p><a class="btn btn-lg btn-success" data-toggle="modal" data-target="#newordermodal">Place your order &rarr;</a></p>
 			</div>
 			<div class="row marketing">
+					<?php //get our orders
+						$diff = time()-43200;
+						$orders = $this->shared->get_orders(false,array('status'=>'open','time >'=>$diff));
+						if ($orders !== false and count($orders) != 0) {
+						?>
 					<h4 class="text-center">These folks want lunch</h4>
 					<p>Get karma by going out and delivering lunch for these fine people. Warning, tips and friendships might ensue.</p>
 					<table class="table table-condensed">
@@ -58,10 +63,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							<?php //get our orders
-								$diff = time()-43200;
-								$orders = $this->shared->get_orders(false,array('status'=>'open','time >'=>$diff));
-								foreach ($orders as $order) { ?> 
+							<?php foreach ($orders as $order) { ?> 
 							<tr class="pohover" data-toggle="popover" data-html="true" data-placement="top" data-trigger="hover" title="<?php echo $order['restaurant']; ?>" data-content="<strong>Where</strong>: <?php echo $order['restaurant']; ?><br><strong>What:</strong> <?php echo $order['order']; ?><br><strong>Cost(ish):</strong> $<?php echo $order['cost']; ?><br><strong>Tip:</strong> <?php echo $order['tip']; ?><br><strong>Can be trusted?:</strong> <?php echo ($order['order'] == 'off') ? '?':'They say so'; ?>">
 								<th scope="row"><span class="label label-<?php $_time = time() - $order['time']; echo ($_time < 7200) ? ($_time < 3600) ? ($_time < 1800) ? 'success' : 'default' : 'warning' : 'danger'; ?>"><?php echo $this->shared->twitterdate($order['time']); ?></span></th>
 								<td><?php $_user = $this->ion_auth->user($order['user'])->row(); echo $_user->first_name.' '.$_user->last_name; ?></td>
@@ -71,7 +73,11 @@
 							</tr>
 							<?php } ?> 
 						</tbody>
-					</table>					
+					</table>	
+					<?php } else { ?>				
+					<h4 class="text-center">These folks want lunch</h4>
+					<p class="alert alert-info">No lunch orders! Hungry? <button class="btn btn-xs btn-info" data-toggle="modal" data-target="#newordermodal">Add an order!</button></p>
+					<?php } ?>				
 					<p>This is a list of orders from the last 12 hours. <a href="<?php echo base_url('archive'); ?>">See all?</a></p>
 					<?php $orders = $this->shared->get_orders(false,array('status'=>'inprogress','time >'=>$diff)); if ($orders !== false and count($orders) != 0) { ?>
 
@@ -91,7 +97,7 @@
 							<tr class="pohover" data-toggle="popover" data-html="true" data-placement="top" data-trigger="hover" title="<?php echo $order['restaurant']; ?>" data-content="<strong>Where</strong>: <?php echo $order['restaurant']; ?><br><strong>What:</strong> <?php echo $order['order']; ?><br><strong>Cost(ish):</strong> $<?php echo $order['cost']; ?><br><strong>Tip:</strong> <?php echo $order['tip']; ?><br><strong>Can be trusted?:</strong> <?php echo ($order['order'] == 'off') ? '?':'They say so'; ?>">
 								<th scope="row"><span class="label label-<?php $_time = time() - $order['timeclaimed']; echo ($_time < 7200) ? ($_time < 3600) ? ($_time < 1800) ? 'success' : 'default' : 'warning' : 'danger'; ?>"><?php echo $this->shared->twitterdate($order['timeclaimed']); ?></span></th>
 								<td><?php $_ouser = $this->ion_auth->user($order['user'])->row(); $_cuser = $this->ion_auth->user($order['claimuser'])->row(); echo $_cuser->first_name.' '.$_cuser->last_name; ?> -> <?php echo $order['restaurant']; ?> -> <?php echo $_ouser->first_name.' '.$_ouser->last_name; ?></td>
-								<td><?php if ($this->ion_auth->logged_in() && $user->id == $order['claimuser']) { ?><button type="button" class="btn btn-primary btn-xs tt" onclick="unclaim(<?php echo $order['id']; ?>, this);" title="When you click this, <?php echo $_user->first_name; ?> will be notified that you are reopening their lunch order, sad day.">Unclaim?</button> <button type="button" class="btn btn-primary btn-xs tt" onclick="marksuccess(<?php echo $order['id']; ?>, this);" title="Click to mark this order as delivered and as a success!">Delivered?</button> <?php } if ($this->ion_auth->logged_in() && $user->id == $order['user']) { ?><button type="button" class="btn btn-primary btn-xs tt" title="Click to mark this order as delivered and as a success!" onclick="marksuccess(<?php echo $order['id']; ?>, this);">Delivered?</button> <?php } ?></td>
+								<td><?php if ($this->ion_auth->logged_in() && $user->id == $order['claimuser']) { ?><button type="button" class="btn btn-primary btn-xs tt" onclick="unclaim(<?php echo $order['id']; ?>, this);" title="When you click this, <?php echo $_ouser->first_name; ?> will be notified that you are reopening their lunch order, sad day.">Unclaim?</button> <button type="button" class="btn btn-primary btn-xs tt" onclick="marksuccess(<?php echo $order['id']; ?>, this);" title="Click to mark this order as delivered and as a success!">Delivered?</button> <?php } if ($this->ion_auth->logged_in() && $user->id == $order['user']) { ?><button type="button" class="btn btn-primary btn-xs tt" title="Click to mark this order as delivered and as a success!" onclick="marksuccess(<?php echo $order['id']; ?>, this);">Delivered?</button> <?php } ?></td>
 							</tr>
 							<?php } ?> 
 						</tbody>
@@ -116,7 +122,7 @@
 								foreach ($orders as $order) { ?> 
 							<tr>
 								<td><?php $_ouser = $this->ion_auth->user($order['user'])->row(); $_cuser = $this->ion_auth->user($order['claimuser'])->row(); echo $_cuser->first_name.' '.$_cuser->last_name; ?> delivered <?php echo $order['restaurant']; ?> to <?php echo $_ouser->first_name.' '.$_ouser->last_name; ?> <i>(<?php echo $this->shared->twitterdate($order['timeclaimed']); ?>)</i></td>
-								<td><?php if ($this->ion_auth->logged_in() && $user->id == $order['user']) { ?><button type="button" class="btn btn-primary btn-xs tt" onclick="dispute(<?php echo $order['id']; ?>, this);" title="Is this a false claim?">Not a success?</button> <?php } ?></td>
+								<td><?php if ($this->ion_auth->logged_in() && $user->id == $order['user']) { ?><button type="button" class="btn btn-primary btn-xs tt" onclick="dispute(<?php echo $order['id']; ?>, this);" title="Is this a false claim? This doesn't do anything yet...">Not a success?</button> <?php } ?></td>
 							</tr>
 							<?php } ?> 
 						</tbody>

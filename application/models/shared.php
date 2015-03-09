@@ -150,6 +150,8 @@ class shared extends CI_Model {
 				'result' => $query,
 				'order' => $order,
 			);
+
+			$email = $this->send_email($user,'Order Posted',"Great success, your {$order['restaurant']} order has been posted. You'll get an email when someone claims to deliver it! \nJust know there isn't any guarantee that it will be picked up and delivered. If no one claims it, you may want to go and get it yourself (and maybe deliver some other orders for karma!).");
 			return $return;
 		}
 	}
@@ -191,15 +193,95 @@ class shared extends CI_Model {
 		}
 	}
 	
+	// update status
+	public function update_status($order=false,$status='closed')
+	{
+		if ($order === false) {
+			return false;
+		} else {
+			$data = array(
+				'status' => $status,
+			);
+			if ($status == 'complete') $data['timesuccess'] = time();
+			$this->db->where('id', $order);
+			$this->db->update('lunch_orders', $data); 
+
+
+			$order = $this->get_orders($order);
+			if ($status == 'complete') {
+				$orderuser = $this->ion_auth->user($order['user'])->row();
+				$claimuser = $this->ion_auth->user($order['claimuser'])->row();
+				$claimuseremail = $this->send_email($claimuser,'Order Delivered',"Your delivery to {$orderuser->first_name} {$orderuser->last_name} has been marked as 'delivered' and you are officially awesome.");
+				$orderuseremail = $this->send_email($orderuser,'Order Delivered',"Your order was delivered by {$claimuser->first_name} {$claimuser->last_name} and has been marked as 'delivered'. Great success! Next time, try delivering an order to gain karma!");
+			}
+			if ($status == 'open') {
+				$orderuser = $this->ion_auth->user($order['user'])->row();
+				$claimuser = $this->ion_auth->user($order['claimuser'])->row();
+				$claimuseremail = $this->send_email($claimuser,'Order Un-claimed',"You are no longer set to deliver {$orderuser->first_name} {$orderuser->last_name}'s order. Sad day.");
+				$orderuseremail = $this->send_email($orderuser,'Order Un-claimed',"{$claimuser->first_name} {$claimuser->last_name} has unclaimed your order. It is still on the site but you may want to consider getting it yourself or removing it if it has been more than an hour since you first posted it. Sorry, but sometimes life gives you lemons.");
+			}
+			return true;
+		}
+	}
+
+	// claim order
+	public function claim_order($order=false)
+	{
+		// need to be logged in
+		if (!$this->ion_auth->logged_in()) return false;
+		// get out claim user
+		$user = $this->ion_auth->user()->row();
+		if ($order === false || $user === false) {
+			return false;
+		} else {
+			$data = array(
+				'status' => 'inprogress',
+				'timeclaimed' => time(),
+				'claimuser' => $user->id,
+			);
+			$this->db->where('id', $order);
+			$this->db->update('lunch_orders', $data); 
+
+			$order = $this->get_orders($order);
+			if (empty($order) || is_numeric($order)) return false;
+			$orderuser = $this->ion_auth->user($order['user'])->row();
+			$claimuser = $this->ion_auth->user($order['claimuser'])->row();
+			
+			//print_r(array('order'=>$order,'claimuser'=>$claimuser,'orderuser'=>$orderuser));die;
+			
+			// email to the claim user
+			$claimuseremail = $this->send_email(
+				$claimuser,
+				'Order Claimed',
+				"Great work, you claimed {$orderuser->first_name} {$orderuser->last_name}'s order from {$order['restaurant']}.<br><br>
+				Restaurant: {$order['restaurant']}<br>Order Detail: {$order['order']}<br>Cost: \${$order['cost']}<br>Tip: {$order['tip']}<br>Location: {$order['location']}<br>Notes: {$order['notes']}<br><br>
+				Name: {$orderuser->first_name} {$orderuser->last_name}<br>Phone Number: {$order['phone']} (be nice)<br>Email: {$order['email']}<br><br>
+				Thank you, you are the reason this all works. Karma for you!!!"
+			);
+			
+			// email to order creator
+			$orderuseremail = $this->send_email(
+				$orderuser,
+				'Your order is on it\'s way',
+				"Guess what! {$claimuser->first_name} {$claimuser->last_name} claimed your order from {$order['restaurant']}. The following details were sent to them.<br><br>
+				Restaurant: {$order['restaurant']}<br>Order Detail: {$order['order']}<br>Cost: \${$order['cost']}<br>Tip: {$order['tip']}<br>Location: {$order['location']}<br>Notes: {$order['notes']}<br><br>
+				Details about who claimed your order:<br>Name: {$claimuser->first_name} {$claimuser->last_name}<br>Phone Number: {$claimuser->phone}<br>Email: {$claimuser->email}<br><br>
+				Have your cash/money ready and be sure to mark your order as delivered when you get it."
+			);
+
+			return true;
+		}
+	}
+
 	// Time Difference
 	public function twitterdate($date)
 	{
 		if(empty($date)) {
-		return "No date provided"; 
+			return "No date provided"; 
 		}
 		
 		//$periods = array("second", "minute", "hour", "day", "week", "month", "year", "decade");
-		$periods = array("s", "m", "h", "day", "week", "month", "year", "decade");
+		$periods = array("s", "m", "h", "d", "w", " month", " year", " decade");
 		$lengths = array("60","60","24","7","4.35","12","10");
 		
 		$now = time();
@@ -207,25 +289,25 @@ class shared extends CI_Model {
 		$unix_date = $date;
 		// Check validity of date
 		if(empty($unix_date)) {
-		return "Bad date"; 
+			return "Bad date"; 
 		}
 		
 		// Determine tense of date
 		if($now > $unix_date) {
-		$difference = $now - $unix_date;
-		$tense = "ago"; } else {
-		$difference = $unix_date - $now;
-		$tense = "from now";
+			$difference = $now - $unix_date;
+			$tense = "ago"; } else {
+			$difference = $unix_date - $now;
+			$tense = "from now";
 		}
 		
 		for($j = 0; $difference >= $lengths[$j] && $j < count($lengths)-1; $j++) {
-		$difference /= $lengths[$j];
+			$difference /= $lengths[$j];
 		}
 		
 		$difference = round($difference);
 		
 		if($difference != 1) {
-		//$periods[$j].= "s";
+			//$periods[$j].= "s";
 		}
 		
 		//return "$difference $periods[$j] {$tense}";

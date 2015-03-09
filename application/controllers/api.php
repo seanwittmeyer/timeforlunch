@@ -53,7 +53,7 @@ class Api extends CI_Controller {
 			print json_encode(array('result'=>'403','type'=>'error','message'=>"You can't claim orders unless you are logged in."));
 			die;
 		}
-		$result = $this->shared->claim_order($id, false);
+		$result = $this->shared->claim_order($id);
 		$this->output->set_status_header('200');
 		print json_encode(array('result'=>'200','type'=>'success','message'=>"Order claimed!"));
 		
