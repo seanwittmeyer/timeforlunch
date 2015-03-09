@@ -18,6 +18,72 @@ class shared extends CI_Model {
 		$this->load->database();
 	}
 
+	/* send email
+	public function start_mandrill()
+	{
+		// Mandrill setup
+		$this->load->library('mandrill');
+		$mandrill_ready = NULL;
+		try {
+			$this->mandrill->init( '-nnn' );
+			$mandrill_ready = TRUE;
+		} catch(Mandrill_Exception $e) {
+			$mandrill_ready = FALSE;
+		}
+		return $mandrill_ready;
+	}
+
+	// Prepare and send a notification via mandrill
+	public function go_mandrill($message,$recipients=false)
+	{
+		/* Send some email. Format the source as:
+		$email = array(
+			'html' => '<p>This is my message<p>', //Consider using a view file
+			'text' => 'This is my plaintext message',
+			'subject' => 'This is my subject',
+			'from_email' => 'me@ohmy.com',
+			'from_name' => 'Me-Oh-My',
+			'to' => array(array('email' => 'joe@example.com' )) //Check documentation for more details on this one
+			//'to' => array(array('email' => 'joe@example.com' ),array('email' => 'joe2@example.com' )) //for multiple emails
+			);
+		* /
+		//show_error(serialize($message));
+		$email = array(
+			'html' => '<p>This is my message<p>', // Consider using a view file
+			'text' => 'This is my plaintext message',
+			'subject' => 'This is my subject',
+			'from_email' => 'me@ohmy.com',
+			'from_name' => 'Me-Oh-My',
+			'to' => array(array('email' => 'joe@example.com' )) //Check documentation for more details on this one
+			//'to' => array(array('email' => 'joe@example.com' ),array('email' => 'joe2@example.com' )) //for multiple emails
+			);
+		$this->mandrill->messages_send($message);
+	}*/
+
+	// Send an email, send in an id or the user object
+	public function send_email($to,$subject,$message) {
+	    $this->load->library('email');
+		if (is_numeric($to)) {
+			$to = $this->ion_auth->user($to)->row();
+			if ($to === false) return false;
+		} elseif (!is_object($to)) {
+			return false;
+		}
+
+	    $defaults = array(
+		    'site' => 'Time for Lunch - ',
+		    'footer' => "<br><br>Sent by Time for Lunch."
+	    );
+	    // just in case
+	    $this->email->clear();
+	
+	    $this->email->to($to->email);
+	    $this->email->from('lunch@zilifone.net');
+	    $this->email->subject($defaults['site'].$subject);
+	    $this->email->message("Hi {$to->first_name},<br>{$message}{$defaults['footer']}");
+	    $this->email->send();
+	}
+
 	// get order(s)
 	public function get_orders($id=false,$where=false)
 	{
