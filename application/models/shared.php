@@ -318,5 +318,10 @@ class shared extends CI_Model {
 		echo $result;
 		*/
 	}	
+	
+	// escape double quotes
+	public function q($string) {
+		return htmlspecialchars($string);
+	}
 
 }
